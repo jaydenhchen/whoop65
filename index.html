@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07080c" />
+    <title>WHOOP.65 — Tiny Whoop Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="view"></canvas>
+      <div class="vignette"></div>
+      <div class="scanlines"></div>
+
+      <div id="menu">
+        <div class="menu-panel">
+          <p class="kicker">indoor 65mm park</p>
+          <h1>WHOOP.65</h1>
+          <p class="tag">tiny whoop simulator</p>
+          <div class="mode-row" id="mode-row">
+            <button type="button" class="mode-btn on" data-mode="angle">ANGLE</button>
+            <button type="button" class="mode-btn" data-mode="acro">ACRO</button>
+          </div>
+          <button type="button" id="play">ARM &amp; FLY</button>
+          <dl class="binds">
+            <div><dt>Throttle / Yaw</dt><dd>W S · A D</dd></div>
+            <div><dt>Pitch / Roll</dt><dd>Arrow keys or I J K L</dd></div>
+            <div><dt>Camera / Mode / Reset</dt><dd>C · M · R</dd></div>
+            <div><dt>Gamepad</dt><dd>Mode 2 sticks · A reset · B camera</dd></div>
+          </dl>
+          <p class="tip">Hover in ANGLE, then switch to ACRO for flips. Fly the eight gates for lap time.</p>
+        </div>
+      </div>
+
+      <div id="hud" class="hidden">
+        <div id="osd-tl">
+          <div id="osd-mode">ANGLE</div>
+          <div id="osd-batt">4.20V  1S</div>
+          <div id="osd-rssi">LQ 99</div>
+        </div>
+        <div id="osd-tr">
+          <div id="osd-timer">00:00.0</div>
+          <div id="osd-lap">LAP --.--</div>
+          <div id="osd-best">BEST --.--</div>
+        </div>
+        <div id="thr"><div id="thr-fill"></div></div>
+        <div id="crosshair"></div>
+        <div id="horizon"><div id="horizon-bar"></div></div>
+        <div id="osd-bl">
+          <div id="osd-spd">0.0 m/s</div>
+          <div id="osd-alt">ALT 0.12</div>
+          <div id="osd-amp">0.0 A</div>
+        </div>
+        <div id="osd-br">
+          <div id="osd-gate">GATE 1 / 8</div>
+          <div id="osd-cam">FPV 30°</div>
+        </div>
+        <canvas id="minimap" width="200" height="150"></canvas>
+        <div id="sticks">
+          <div class="stick" id="stick-l"><i></i></div>
+          <div class="stick" id="stick-r"><i></i></div>
+        </div>
+        <div id="banner"></div>
+        <p id="hint">W/S throttle · A/D yaw · arrows pitch/roll · C camera · M angle/acro · R reset · Esc pause</p>
+      </div>
+
+      <div id="pause" class="hidden">
+        <div class="pause-panel">
+          <h2>PAUSED</h2>
+          <button type="button" id="resume">RESUME</button>
+          <button type="button" id="to-menu">HANGAR</button>
+        </div>
+      </div>
+
+      <div id="touch" class="hidden">
+        <div id="touch-bar">
+          <button type="button" id="touch-reset">RESET</button>
+          <button type="button" id="touch-cam">CAM</button>
+          <button type="button" id="touch-mode">MODE</button>
+          <button type="button" id="touch-pause">PAUSE</button>
+        </div>
+        <div class="pad" id="pad-l"><i></i></div>
+        <div class="pad" id="pad-r"><i></i></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
