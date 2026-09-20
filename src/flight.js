@@ -298,10 +298,12 @@ export class Flight {
     this.vel.addScaledVector(acc, dt);
     this.pos.addScaledVector(this.vel, dt);
     this._integrateOrientation(dt);
-    const impact = this._collide(colliders);
+    const hit = this._collide(colliders);
     this.bodyAxes();
-    const landing = this.pos.y < 0.14 && this.up.y > 0.4 && impact < 11;
-    if (impact > 7.5 && !landing) this._crash(impact);
+    const landing = hit.floor > 0 && this.pos.y < 0.14 && this.up.y > 0.4 && hit.floor < 11;
+    if (hit.wall > 7.5 || (hit.floor > 7.5 && !landing)) {
+      this._crash(Math.max(hit.wall, hit.floor));
+    }
 
     this.mah += avg * 6.5 * dt;
     this.voltage = Math.max(3.2, 4.2 - this.mah / 280 - avg * 0.38);
@@ -318,25 +320,26 @@ export class Flight {
   }
 
   _collide(colliders) {
-    let best = 0;
+    let wall = 0;
     for (const c of colliders) {
       let imp = 0;
       if (c.type === "aabb") imp = collideAABB(this.pos, this.vel, RADIUS, c.min, c.max);
       else if (c.type === "cyl") imp = collideCyl(this.pos, this.vel, RADIUS, c);
       else if (c.type === "yawbox") imp = collideYawBox(this.pos, this.vel, RADIUS, c);
-      if (imp > best) best = imp;
+      if (imp > wall) wall = imp;
     }
+    let floor = 0;
     if (this.pos.y < RADIUS) {
       this.pos.y = RADIUS;
       if (this.vel.y < 0) {
-        best = Math.max(best, -this.vel.y);
+        floor = -this.vel.y;
         this.vel.y *= -0.15;
         this.vel.x *= 0.75;
         this.vel.z *= 0.75;
         if (Math.abs(this.vel.y) < 0.15) this.vel.y = 0;
       }
     }
-    return best;
+    return { wall, floor };
   }
 
   _crash(speed) {

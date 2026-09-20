@@ -82,6 +82,10 @@ export class AudioEngine {
     this.noiseGain.gain.setTargetAtTime(0.01 + avg * 0.04 + airspeed * 0.004, t, 0.08);
   }
 
+  silence() {
+    this.setMotors(0, 0, true);
+  }
+
   blip(freq, dur = 0.12, type = "square", gain = 0.08) {
     if (!this.ctx) return;
     const o = this.ctx.createOscillator();

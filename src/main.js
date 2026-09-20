@@ -6,6 +6,25 @@ import { createArena, checkGate } from "./arena.js";
 import { AudioEngine } from "./audio.js";
 import { createOsd } from "./osd.js";
 
+const store = Object.create(null);
+function storageGet(key) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v != null) store[key] = v;
+    return v;
+  } catch {
+    return store[key] ?? null;
+  }
+}
+function storageSet(key, value) {
+  store[key] = value;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
 const canvas = document.getElementById("view");
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -27,7 +46,7 @@ drone.group.castShadow = true;
 scene.add(drone.group);
 
 const flight = new Flight(arena.spawn);
-flight.mode = localStorage.getItem("whoop-mode") || "angle";
+flight.mode = storageGet("whoop-mode") || "angle";
 
 const fpvCam = new THREE.PerspectiveCamera(78, 1, 0.008, 60);
 fpvCam.position.set(0, 0.013, 0.028);
@@ -61,7 +80,8 @@ const state = {
   airtime: 0,
   lapTime: 0,
   lapStart: 0,
-  bestLap: Number(localStorage.getItem("whoop-best") || 0) || null,
+  bestLap: Number(storageGet("whoop-best") || 0) || null,
+  flyingLap: false,
   cam: "fpv",
   camLabel: "FPV 30°",
 };
@@ -87,7 +107,7 @@ resize();
 
 function setMode(mode) {
   flight.mode = mode;
-  localStorage.setItem("whoop-mode", mode);
+  storageSet("whoop-mode", mode);
   document.querySelectorAll(".mode-btn").forEach((b) => {
     b.classList.toggle("on", b.dataset.mode === mode);
   });
@@ -128,7 +148,7 @@ function resetDrone(full) {
     p.y = Math.max(0.08, g.position.y - 0.15);
     flight.reset(p, g.yaw);
   }
-  flight.mode = localStorage.getItem("whoop-mode") || "angle";
+  flight.mode = storageGet("whoop-mode") || "angle";
   state.airtime = full ? 0 : state.airtime;
   if (full) {
     tracker.next = 0;
@@ -136,8 +156,12 @@ function resetDrone(full) {
     tracker.laps = 0;
     state.lapTime = 0;
     state.lapStart = 0;
+    state.flyingLap = false;
   }
-  for (const gate of arena.gates) gate.lastDepth = 0;
+  for (const gate of arena.gates) {
+    gate.lastDepth = 0;
+    gate.armed = false;
+  }
   input.throttle = 0;
   crashBanner = false;
 }
@@ -153,6 +177,32 @@ document.getElementById("to-menu").addEventListener("click", () => {
   show("hud", false);
   show("touch", false);
   show("menu", true);
+  audio.silence();
+});
+
+function bindTouch(id, fn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fn();
+  });
+}
+bindTouch("touch-reset", () => resetDrone(true));
+bindTouch("touch-cam", () => {
+  state.cam = state.cam === "fpv" ? "chase" : "fpv";
+});
+bindTouch("touch-mode", () => setMode(flight.mode === "angle" ? "acro" : "angle"));
+bindTouch("touch-pause", () => {
+  if (state.phase === "play") {
+    state.phase = "paused";
+    show("pause", true);
+    audio.silence();
+  } else if (state.phase === "paused") {
+    state.phase = "play";
+    show("pause", false);
+  }
 });
 
 const STEP = 1 / 180;
@@ -200,6 +250,7 @@ function frame(now) {
     flight.motors.fill(0.28);
     drone.update(flight, dt);
     highlightGates();
+    audio.silence();
     renderer.render(scene, menuCam);
     return;
   }
@@ -216,6 +267,7 @@ function frame(now) {
   }
 
   if (state.phase === "paused") {
+    audio.silence();
     renderer.render(scene, state.cam === "fpv" ? fpvCam : chaseCam);
     return;
   }
@@ -241,29 +293,30 @@ function frame(now) {
 
   if (!flight.crashed) {
     state.airtime += dt;
-    if (tracker.passed > 0) state.lapTime += dt;
+    if (state.flyingLap) state.lapTime += dt;
     const ev = checkGate(flight, arena.gates, tracker);
     if (ev === "gate") {
       audio.gate();
       osd.flash(`GATE ${tracker.next === 0 ? arena.gates.length : tracker.next}`);
-      if (tracker.passed === 1) {
-        state.lapStart = state.airtime;
-        state.lapTime = 0;
-      }
     } else if (ev === "lap") {
       audio.lap();
-      const t = state.lapTime;
-      if (!state.bestLap || t < state.bestLap) {
-        state.bestLap = t;
-        localStorage.setItem("whoop-best", String(t));
-        osd.flash(`BEST ${t.toFixed(2)}s`);
-      } else osd.flash(`LAP ${t.toFixed(2)}s`);
+      if (state.flyingLap) {
+        const t = state.lapTime;
+        if (!state.bestLap || t < state.bestLap) {
+          state.bestLap = t;
+          storageSet("whoop-best", String(t));
+          osd.flash(`BEST ${t.toFixed(2)}s`);
+        } else osd.flash(`LAP ${t.toFixed(2)}s`);
+      } else {
+        osd.flash("LAP TIMING");
+      }
+      state.flyingLap = true;
       state.lapTime = 0;
     }
   } else if (!crashBanner) {
     crashBanner = true;
     audio.crash();
-    osd.flash("CRASH  ·  R RESET");
+    osd.flash("CRASH  ·  TAP RESET");
   }
 
   drone.update(flight, dt);

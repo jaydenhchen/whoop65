@@ -311,6 +311,26 @@ h1 {
   pointer-events: none;
 }
 
+#touch-bar {
+  pointer-events: auto;
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+#touch-bar button {
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.5);
+  color: #eef3ea;
+}
+
 .pad {
   pointer-events: auto;
   position: absolute;

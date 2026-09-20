@@ -100,24 +100,26 @@ export class Input {
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = pads[0] || pads[1];
-    if (gp && playing) {
-      const dead = (v) => (Math.abs(v) < 0.08 ? 0 : v);
-      const ly = dead(gp.axes[1] ?? 0);
-      const lx = dead(gp.axes[0] ?? 0);
-      const rx = dead(gp.axes[2] ?? 0);
-      const ry = dead(gp.axes[3] ?? 0);
-      const live = Math.abs(ly) + Math.abs(lx) + Math.abs(rx) + Math.abs(ry) > 0.02;
-      if (live || gp.buttons?.[0]?.pressed) {
-        this.usingPad = true;
-        throttle = Math.max(0, Math.min(1, (-ly + 1) * 0.5));
-        yaw = lx;
-        roll = rx;
-        pitch = ry;
-      }
+    if (gp) {
       this.resetEdge = this.resetEdge || this._gpEdge(gp.buttons, 0, "gpA");
       this.camEdge = this.camEdge || this._gpEdge(gp.buttons, 1, "gpB");
       this.modeEdge = this.modeEdge || this._gpEdge(gp.buttons, 3, "gpY");
       this.pauseEdge = this.pauseEdge || this._gpEdge(gp.buttons, 9, "gpStart");
+      if (playing) {
+        const dead = (v) => (Math.abs(v) < 0.08 ? 0 : v);
+        const ly = dead(gp.axes[1] ?? 0);
+        const lx = dead(gp.axes[0] ?? 0);
+        const rx = dead(gp.axes[2] ?? 0);
+        const ry = dead(gp.axes[3] ?? 0);
+        const live = Math.abs(ly) + Math.abs(lx) + Math.abs(rx) + Math.abs(ry) > 0.02;
+        if (live || gp.buttons?.[0]?.pressed) {
+          this.usingPad = true;
+          throttle = Math.max(0, Math.min(1, (-ly + 1) * 0.5));
+          yaw = lx;
+          roll = rx;
+          pitch = ry;
+        }
+      }
     }
 
     if (this.touch.l || this.touch.r) {

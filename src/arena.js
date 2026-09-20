@@ -386,6 +386,7 @@ export function createArena(scene) {
       h: gd.h,
       mesh,
       lastDepth: 0,
+      armed: false,
     });
   });
 
@@ -429,10 +430,13 @@ export function checkGate(flight, gates, tracker) {
   const depth = relx * g.dir.x + relz * g.dir.z;
   const side = relx * g.right.x + relz * g.right.z;
   const inHole = Math.abs(side) < g.w * 0.48 && Math.abs(rely) < g.h * 0.48;
-  const crossed = g.lastDepth < -0.04 && depth > 0.02 && inHole;
   const along = flight.vel.x * g.dir.x + flight.vel.z * g.dir.z;
+  if (inHole && depth < -0.02) g.armed = true;
+  if (!inHole && Math.abs(depth) > 0.3) g.armed = false;
+  const crossed = Boolean(g.armed) && inHole && depth > 0.02 && along > 0.08;
   g.lastDepth = depth;
-  if (crossed && along > 0.12) {
+  if (crossed) {
+    g.armed = false;
     tracker.next = (tracker.next + 1) % gates.length;
     tracker.passed += 1;
     if (tracker.next === 0) {
